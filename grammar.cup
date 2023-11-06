@@ -1,0 +1,323 @@
+import java_cup.runtime.*;
+
+terminal CLASS, VOID, FINAL, RETURN;
+terminal String INT, CHAR, STRING, BOOL, FLOAT;
+terminal READ, PRINT, PRINTLINE;
+terminal IF, ELSE, WHILE, TRUE, FALSE;
+terminal LPARENTHESIS, RPARENTHESIS, LCURLYBRACKET, RCURLYBRACKET, LBRACKET, RBRACKET ;
+terminal SEMICOLON, COMMA, QUESTIONMARK, COLON, TILDENOTE;
+terminal INCREMENTBY, DECREMENTBY, MULTIPLYBY, DIVIDEBY, ADDBY, SUBTRACTBY, ASSIGNBY;
+terminal LESSTHANSIGN, GREATERTHANSIGN, DOUBLEEQUALTOSIGN, LESSTHANEQUALTOSIGN, GREATERTHANEQUALTOSIGN, LOZENGESIGN, ORSIGN, ANDSIGN;
+terminal String ID;
+terminal int INTLITERAL;
+terminal float FLOATLITERAL;
+terminal String CHARLITERAL;
+terminal String STRINGLITERAL;
+terminal UPLUS, UMINUS;
+
+non terminal Program program;
+non terminal Memberdecls memberdecls;
+non terminal ClassMembers classmembers;
+non terminal Fielddecls fielddecls;
+non terminal Fielddecl fielddecl;
+non terminal Methoddecls methoddecls;
+non terminal Methoddecl methoddecl;
+// non terminal Optionalfinal optionalfinal;
+non terminal Expr optionalexpr;
+non terminal Boolean optionalsemi;
+// non terminal Returntype returntype;
+non terminal String type;
+non terminal ArgdeclList argdecllist;
+non terminal Argdecls argdecls;
+non terminal Argdecl argdecl;
+non terminal Stmts stmts;
+non terminal Stmt stmt;
+non terminal Stmt ifStmt;
+non terminal Stmt ifEnd;
+non terminal Args args;
+non terminal Name name;
+non terminal Readlist readlist;
+non terminal Printlist printlist;
+non terminal Printlinelist printlinelist;
+non terminal Expr expr;
+non terminal BinaryOp binaryOp;
+
+// PRECEDENCE //
+
+precedence left ELSE;
+
+precedence left ASSIGNBY;
+
+precedence left QUESTIONMARK;
+
+precedence left ORSIGN;
+precedence left ANDSIGN;
+
+precedence left LOZENGESIGN, DOUBLEEQUALTOSIGN;
+precedence left GREATERTHANSIGN, GREATERTHANEQUALTOSIGN, LESSTHANSIGN, LESSTHANEQUALTOSIGN;
+
+precedence left ADDBY, SUBTRACTBY;
+precedence left MULTIPLYBY, DIVIDEBY;
+
+precedence left ADDBY, SUBTRACTBY;
+
+precedence right TILDENOTE, UPLUS, UMINUS;
+
+precedence right INCREMENTBY, DECREMENTBY;
+
+//Productions
+
+program ::= CLASS ID:id LCURLYBRACKET memberdecls:ms RCURLYBRACKET
+			{: RESULT = new Program(id, ms); :}
+			;
+
+memberdecls ::= classmembers: cms
+            	{:  RESULT = new Memberdecls(cms);  :}
+            	;
+
+classmembers ::= 	fielddecl:fd classmembers:cms
+             		{: RESULT = new ClassMembers(fd, cms);  :}
+					| methoddecl: md methoddecls:mds
+					{: RESULT = new ClassMembers(md, mds);  :}
+					| {: RESULT = new ClassMembers();  :}
+					;
+
+fielddecls  ::=		fielddecl:f fielddecls:fs
+					{: RESULT = new Fielddecls(f,fs); :}
+					| 
+					{: RESULT = new Fielddecls(); :}
+					;
+
+methoddecls  ::=	methoddecl:m methoddecls:ms
+					{: RESULT = new Methoddecls(m,ms); :}
+					| 
+					{: RESULT = new Methoddecls(); :}
+					;
+
+fielddecl ::=	FINAL type:t ID:id optionalexpr:opex SEMICOLON
+				{: RESULT = new Fielddecl(true, t, id, opex); :}
+				|	type:t ID:id optionalexpr:opex SEMICOLON
+				{: RESULT = new Fielddecl(false, t, id, opex); :}
+				|	type:t ID:id LBRACKET INTLITERAL:len RBRACKET  SEMICOLON
+				{: RESULT = new Fielddecl(t, id, len); :}
+				;
+
+// optionalfinal ::=	FINAL
+//                		{: RESULT = true;  :}
+//            			| {: RESULT = false;  :}
+//            			;
+
+optionalexpr ::=	ASSIGNBY expr:e
+					{: RESULT = e; :}
+					|
+					{: RESULT = null; :}
+					;
+
+methoddecl ::=	type:t ID:id LPARENTHESIS argdecls:as RPARENTHESIS LCURLYBRACKET fielddecls:fs stmts:sts RCURLYBRACKET optionalsemi:opsemi
+				{: RESULT = new Methoddecl(t, id, as, fs, sts, opsemi); :}
+				| VOID ID:id LPARENTHESIS argdecls:as RPARENTHESIS LCURLYBRACKET fielddecls:fs stmts:sts RCURLYBRACKET optionalsemi:opsemi
+				{: RESULT = new Methoddecl("void", id, as, fs, sts, opsemi); :}
+				;
+
+optionalsemi ::= 	SEMICOLON
+					{: RESULT = true; :}
+					|
+					{: RESULT = false; :}
+					;
+
+// returntype ::= 	type:t 
+//                	{: RESULT = new Returntype(t);  :};
+        //     		|VOID 
+        //         	{: RESULT =  new returntype('void');  :}
+        //     		;
+
+
+type ::=	INT
+			{: RESULT = "int"; :}
+			|	FLOAT
+			{: RESULT = "float"; :}
+			|	BOOL
+			{: RESULT = "bool"; :}
+			| CHAR
+			{: RESULT = "char"; :}
+			;
+
+argdecls ::=	argdecllist:alst
+				{: RESULT = new Argdecls(alst); :}
+				|
+				{: RESULT = new Argdecls(); :}
+				;
+
+argdecllist ::=	argdecl:a COMMA argdecllist:alst
+				{:
+				RESULT = new ArgdeclList(a,alst) ;
+				:}
+				|	argdecl:a
+				{:
+				RESULT = new ArgdeclList(a) ;
+				:}
+				;
+
+argdecl ::=		type:t ID:id
+				{: 
+				RESULT = new Argdecl(t, id, false); 
+				:}
+				|	type:t ID:id LBRACKET RBRACKET 
+				{: 
+				RESULT = new Argdecl(t, id, true); 
+				:}
+				;
+
+stmts ::=	stmt:st stmts:sts
+			{:
+				RESULT = new Stmts(st,sts);
+			:}
+			|
+			{: 
+			RESULT = new Stmts(); 
+			:}
+			;
+
+stmt ::=	ifStmt:ifstmt  // if else
+        	{: RESULT = ifstmt;  :}
+			|	WHILE LPARENTHESIS expr:e RPARENTHESIS stmt:st
+			{: RESULT = new Stmt(e, st); :}
+			|	name:n ASSIGNBY expr:e SEMICOLON
+			{: RESULT = new Stmt(n, e); :}
+			|	READ LPARENTHESIS readlist:rl RPARENTHESIS SEMICOLON
+			{: RESULT = new Stmt(rl); :}
+			|   PRINT LPARENTHESIS printlist:pl RPARENTHESIS SEMICOLON
+			{: RESULT = new Stmt(pl); :}
+			|	PRINTLINE LPARENTHESIS printlinelist:pll RPARENTHESIS SEMICOLON
+			{: RESULT = new Stmt(pll); :}
+			|	ID:id LPARENTHESIS RPARENTHESIS SEMICOLON
+			{: RESULT = new Stmt(id); :}
+			|	ID:id LPARENTHESIS args:args RPARENTHESIS SEMICOLON
+			{: RESULT = new Stmt(id, args); :}
+			| 	RETURN SEMICOLON
+			{: RESULT = new Stmt(); :}
+			| 	RETURN expr:e SEMICOLON
+			{: RESULT = new Stmt(e); :}
+			|	name:n INCREMENTBY SEMICOLON
+			{: RESULT = new Stmt(n, "++"); :}
+			| 	name:n DECREMENTBY SEMICOLON
+			{: RESULT = new Stmt(n, "--"); :}
+			| 	LCURLYBRACKET fielddecls:fs stmts:sts RCURLYBRACKET optionalsemi:opsemi
+			{: RESULT = new Stmt(fs, sts, opsemi); :}
+			;
+
+ifStmt ::= 	IF LPARENTHESIS expr:ex RPARENTHESIS stmt:st1 ifEnd:st2
+        	{: RESULT = new Stmt(ex, st1, st2);  :};
+
+ifEnd ::=	ELSE stmt:st
+			{: RESULT = st; :}
+			|
+			{: RESULT = null; :}
+			;
+
+name ::=  ID:id
+		{: RESULT = new Name(id); :}
+        |  ID:id LBRACKET expr:e RBRACKET 
+		{: RESULT = new Name(id, e); :}
+		;
+
+args ::= 	expr:e COMMA args:args
+			{:
+				RESULT = new Args(e,args);
+			:}
+			|   expr:e
+			{:
+				RESULT = new Args(e);		
+			:}
+			;
+
+readlist ::=	name:n COMMA readlist:rl
+		    {:
+			    RESULT = new Readlist(n,rl);
+			:}
+			|	name:n
+			{:
+				RESULT = new Readlist(n);		
+			:}
+			;
+
+printlist ::=	expr:e COMMA printlist:pl
+				{:
+					RESULT = new Printlist(e,pl);
+				:}
+				|	expr:e
+				{:
+					RESULT = new Printlist(e);		
+				:}
+				;
+
+printlinelist ::=	printlist:pl 
+					{: 
+						RESULT = new Printlinelist(pl); 
+					:}
+					|
+					{: 
+						RESULT = new Printlinelist(); 
+					:}
+					;
+
+expr ::= 	name:n 
+			{: RESULT = new Expr(n);  :}
+			| ID:id LPARENTHESIS RPARENTHESIS
+			{: RESULT = new Expr(id, (Args) null);  :}
+			| ID:id LPARENTHESIS args:a RPARENTHESIS
+			{: RESULT = new Expr(id, a);  :}
+			| INTLITERAL:il 
+			{: RESULT = new Expr(il);  :}
+			| CHARLITERAL:cl 
+			{: RESULT = new Expr(cl, "char");  :}
+			| STRINGLITERAL:sl 
+			{: RESULT = new Expr(sl, "str");  :}
+			| FLOATLITERAL:fl 
+			{: RESULT = new Expr(fl);  :}
+			| TRUE
+			{: RESULT = new Expr(true);  :}
+			| FALSE
+			{: RESULT = new Expr(false);  :}
+			| LPARENTHESIS expr:e RPARENTHESIS
+			{: RESULT = new Expr(e, "PAREN");  :}
+			| TILDENOTE expr:e 
+			{: RESULT = new Expr(e, "~");  :}
+			| SUBTRACTBY expr:e
+			{: RESULT = new Expr(e, "-");  :} %prec UMINUS
+			| ADDBY expr:e
+			{: RESULT = new Expr(e, "+");  :} %prec UPLUS
+			| LPARENTHESIS type:t RPARENTHESIS expr:e
+			{: RESULT = new Expr(t, e);  :}
+			| binaryOp:bo
+			{: RESULT = new Expr(bo);  :}
+			| LPARENTHESIS expr:e1 QUESTIONMARK expr:e2 COLON expr:e3 RPARENTHESIS
+			{: RESULT = new Expr(e1, e2, e3);  :}
+			;
+
+
+binaryOp ::= 	expr:e1 MULTIPLYBY expr:e2
+				{: RESULT = new BinaryOp(e1, e2, "*");  :}
+				| expr:e1 DIVIDEBY expr:e2
+				{: RESULT = new BinaryOp(e1, e2, "/");  :}
+				| expr:e1 ADDBY expr:e2
+				{: RESULT = new BinaryOp(e1, e2, "+");  :}
+				| expr:e1 SUBTRACTBY expr:e2
+				{: RESULT = new BinaryOp(e1, e2, "-");  :}
+				| expr:e1 LESSTHANSIGN expr:e2
+				{: RESULT = new BinaryOp(e1, e2, "<");  :}
+				| expr:e1 GREATERTHANSIGN expr:e2
+				{: RESULT = new BinaryOp(e1, e2, ">");  :}
+				| expr:e1 LESSTHANEQUALTOSIGN expr:e2
+				{: RESULT = new BinaryOp(e1, e2, "<=");  :}
+				| expr:e1 GREATERTHANEQUALTOSIGN expr:e2
+				{: RESULT = new BinaryOp(e1, e2, ">=");  :}
+				| expr:e1 DOUBLEEQUALTOSIGN expr:e2
+				{: RESULT = new BinaryOp(e1, e2, "==");  :}
+				| expr:e1 LOZENGESIGN expr:e2
+				{: RESULT = new BinaryOp(e1, e2, "<>");  :}
+				| expr:e1 ORSIGN expr:e2
+				{: RESULT = new BinaryOp(e1, e2, "||");  :}
+				| expr:e1 ANDSIGN expr:e2
+				{: RESULT = new BinaryOp(e1, e2, "&&");  :}
+				;
